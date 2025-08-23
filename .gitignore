@@ -1,0 +1,31 @@
+﻿# User-specific files
+.vscode/
+.vs/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Auto-generated files
+*.sln.ide
+*.pidb
+*.pdb
+
+# Build output directories
+bin/
+obj/
+Debug/
+Release/
+
+# Log files
+*.log
+
+# Paketler ve bağımlılıklar
+packages/
+node_modules/
+*.nupkg
+
+# Diğer gereksiz dosyalar
+*.tmp
+*.temp
