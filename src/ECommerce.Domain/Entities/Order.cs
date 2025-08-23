@@ -8,6 +8,7 @@ public class Order
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ReservedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public int StatusId { get; set; }
 
     public List<OrderItem> Items { get; set; } = new();
 }
