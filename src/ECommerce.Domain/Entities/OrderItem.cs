@@ -1,5 +1,8 @@
 ﻿namespace ECommerce.Domain.Entities;
-
+ 
+/// <summary>
+/// Future use: Order items can be persisted here if product-level tracking is needed
+/// </summary>
 public class OrderItem
 {
     public Guid Id { get; set; }
