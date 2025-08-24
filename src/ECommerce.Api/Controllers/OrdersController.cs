@@ -22,17 +22,17 @@ public class OrdersController : ControllerBase
 
     // Sipariş oluşturma
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateOrderRequestDto req, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateOrderRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _service.CreateAsync(req, cancellationToken);
+        var response = await _service.CreateAsync(request, cancellationToken);
         return Ok(response);
     }
 
     // Siparişi tamamlama
-    [HttpPost("{id:guid}/complete")]
-    public async Task<IActionResult> Complete([FromRoute] Guid id, CancellationToken cancellationToken)
+    [HttpPost("{orderId}/complete")]
+    public async Task<IActionResult> Complete([FromRoute] string orderId, CancellationToken cancellationToken)
     {
-        var response = await _service.CompleteAsync(id, cancellationToken);
+        var response = await _service.CompleteAsync(orderId, cancellationToken);
         return Ok(response);
     }
 }

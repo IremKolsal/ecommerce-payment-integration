@@ -17,11 +17,14 @@ public class AppDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Status).HasMaxLength(32).IsRequired();
             e.Property(x => x.TotalAmount).HasColumnType("numeric(18,2)");
-            e.Property(x => x.CreatedAt).IsRequired();
-
+            e.Property(x => x.CreatedAt)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'")
+                .IsRequired();
             e.HasMany(x => x.Items)
              .WithOne()
              .HasForeignKey(x => x.OrderId);
+            e.HasIndex(o => o.ExternalOrderId)
+             .IsUnique();
         });
 
         b.Entity<OrderItem>(e =>

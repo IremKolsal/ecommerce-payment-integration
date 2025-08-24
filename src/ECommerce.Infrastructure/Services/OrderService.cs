@@ -26,43 +26,39 @@ public class OrderService : IOrderService
 
     public async Task<CreateOrderResponseDto> CreateAsync(CreateOrderRequestDto request, CancellationToken cancellationToken)
     {
-        var pre = await _balance.PreorderAsync(new PreorderRequestDto(request.Amount, request.OrderId), cancellationToken);
+        var preReq = new PreorderRequestDto(request.Amount, request.OrderId);
+        var preRes = await _balance.PreorderAsync(preReq, cancellationToken);
 
-        var model = pre.Data;
-
+        var status = preRes.Data.PreOrder.Status;
         var order = new Order
         {
             Id = Guid.NewGuid(),
-            Status = "Reserved",
-            TotalAmount = model.PreOrder.Amount,
-            ReservedAt = DateTime.UtcNow,
-            //Items =new (){ new OrderItem
-            //{
-            //    //Id = Guid.NewGuid(),
-            //    //ProductId = request.P,
-            //    //Quantity = i.Quantity,
-            //    //UnitPrice = 0
-            //}
+            Status = status,
+            TotalAmount = preRes.Data.PreOrder.Amount,
+            ExternalOrderId = preRes.Data.PreOrder.OrderId,
+            ReservedAt = DateTime.UtcNow
         };
 
-        //await _db.Orders.AddAsync(order, cancellationToken);
-        //await _db.SaveChangesAsync(cancellationToken);
+        await _db.Orders.AddAsync(order, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
 
-        return new CreateOrderResponseDto(order.Id, order.Status, order.TotalAmount);
+        return new CreateOrderResponseDto(order.Id, order.ExternalOrderId, order.Status, order.TotalAmount);
     }
 
-    public async Task<CompleteOrderResponseDto> CompleteAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<CompleteOrderResponseDto> CompleteAsync(string orderId, CancellationToken cancellationToken)
     {
-        var order = await _db.Orders.FirstOrDefaultAsync(x => x.Id == id, cancellationToken) ?? throw new KeyNotFoundException("Order not found");
+        var order = await _db.Orders.FirstOrDefaultAsync(x => x.ExternalOrderId == orderId, cancellationToken) ?? throw new KeyNotFoundException("Order not found");
 
-        if (!string.Equals(order.Status, "Reserved", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Order state is not Reserved");
+        if (!string.Equals(order.Status, "blocked", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Order state is not blocked");
 
-        var res = await _balance.CompleteAsync(new CompleteRequestDto(order.Id.ToString()), cancellationToken);
-        order.Status = res.Status.Equals("success", StringComparison.OrdinalIgnoreCase) ? "Paid" : "Failed";
-        order.CompletedAt = DateTime.UtcNow;
+        var res = await _balance.CompleteAsync(new CompleteRequestDto(order.ExternalOrderId), cancellationToken);
+
+        order.Status = res.Data.Order.Status;
+        order.CompletedAt = res.Data.Order.CompletedAt;
 
         await _db.SaveChangesAsync(cancellationToken);
-        return new CompleteOrderResponseDto(order.Id, order.Status);
+
+        return new CompleteOrderResponseDto(order.ExternalOrderId, order.Status);
     }
 }
