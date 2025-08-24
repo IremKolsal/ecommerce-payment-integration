@@ -17,5 +17,20 @@ services:
       timeout: 3s
       retries: 5
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-api
+    ports:
+      - "8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=ecommerce;Username=postgres;Password=postgres"
+      Balance__BaseUrl: "https://balance-management-pi44.onrender.com/api/balance/"
+    depends_on:
+      - db
+
 volumes:
   dbdata:
