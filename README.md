@@ -94,55 +94,94 @@ Global `ExceptionMiddleware`:
 * Order tablosu (OrderItem future use)
 * DTO’lar dış servise uyumlu
 
+## 🛣️ Endpointler  
+Localde çalıştırılabilecek örnek request ve responselar.  
+Swagger UI: [http://localhost:8081/swagger](http://localhost:8081/swagger) (docker üzerinden de erişilebilir).  
+
 ---
-## 🛣️ Endpointler
-Localde çalıştırılabilecek örnek request ve responselar
-Swagger UI: http://localhost:8081/swagger(docker üzerinden de erişilebilir).
-********************************************************
-***GET /api/products***
-Balance servisinden ürün listesini getirir.
-Request
-GET http://localhost:8081/api/products
 
+### GET /api/products  
+Balance servisinden ürün listesini getirir.  
 
-***POST /api/Orders/create***
-Request
-URL
-https://localhost:7289/api/Orders/create
-Method
-POST
----Request Body---
+**Request**  
+```
+
+GET [http://localhost:8081/api/products](http://localhost:8081/api/products)
+
+````
+
+**Response Body**  
+```json
+[
+  {
+    "id": "prod-001",
+    "name": "Premium Smartphone",
+    "description": "Latest model with advanced features",
+    "price": 19.99,
+    "currency": "USD",
+    "category": "Electronics",
+    "stock": 42
+  }
+]
+````
+
+---
+
+### POST /api/orders/create
+
+Yeni sipariş oluşturur ve Balance servisinden preorder çağırır.
+
+**Request**
+
+```
+POST http://localhost:8081/api/orders/create
+Content-Type: application/json
+```
+
+**Request Body**
+
+```json
 {
   "amount": 15,
   "orderId": "preorder-001"
 }
------------------------
-Response Body
+```
+
+**Response Body**
+
+```json
 {
   "id": "c94ecd9d-ca15-4842-a487-bd56fbdefc2e",
   "orderId": "preorder-001",
   "status": "blocked",
   "totalAmount": 15
 }
-------------------------
-**************************************************
-***POST /api/Orders/{orderId}/complete***
-Request
-URL
-https://localhost:7289/api/Orders/preorder-001/complete
-Method
-POST
-Parameters
-orderId (string, required, path): The ID of the order to complete (e.g., preorder-001).
----Request Body---
-preorder-001
--------------------------------
-Response Body
+```
+
+---
+
+### POST /api/orders/{orderId}/complete
+
+Daha önce oluşturulmuş siparişi tamamlar (Balance complete çağrısı).
+
+**Request**
+
+```
+POST http://localhost:8081/api/orders/preorder-001/complete
+```
+
+**Parameters**
+
+* `orderId` (string, required, path): Tamamlanacak sipariş kimliği (örn: preorder-001).
+
+**Response Body**
+
+```json
 {
   "orderId": "preorder-001",
   "status": "completed"
 }
-----------------------------------
+```
 
 ## 📝 Notlar
 
