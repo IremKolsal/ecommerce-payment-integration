@@ -97,7 +97,14 @@ Global `ExceptionMiddleware`:
 ---
 ## 🛣️ Endpointler
 Localde çalıştırılabilecek örnek request ve responselar
+Swagger UI: http://localhost:8081/swagger(docker üzerinden de erişilebilir).
 ********************************************************
+***GET /api/products***
+Balance servisinden ürün listesini getirir.
+Request
+GET http://localhost:8081/api/products
+
+
 ***POST /api/Orders/create***
 Request
 URL
