@@ -69,3 +69,9 @@ public record CompletedOrder(
     DateTime? CompletedAt
 );
 
+public class ProductResponseModel
+{
+    public bool Success { get; set; }
+    public List<ProductDto> Data { get; set; }
+}
+

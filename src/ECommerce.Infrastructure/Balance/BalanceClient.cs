@@ -51,8 +51,3 @@ public class BalanceClient(HttpClient http) : IBalanceClient
         return body;
     }
 }
-public class ProductResponseModel
-{
-    public bool Success { get; set; }
-    public List<ProductDto> Data { get; set; }
-}
