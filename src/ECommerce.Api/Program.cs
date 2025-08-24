@@ -70,7 +70,11 @@ app.UseAuthorization();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate(); // Migrationlarý otomatik uygular
+
+    if (db.Database.GetPendingMigrations().Any())
+        db.Database.Migrate();
+    else
+        db.Database.EnsureCreated();
 }
 
 app.MapControllers();
