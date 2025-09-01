@@ -1,11 +1,10 @@
-﻿using ECommerce.Application.Contracts;
-using FluentValidation;
+﻿using FluentValidation;
 
-namespace ECommerce.Application.Validation;
+namespace ECommerce.Application.Commands.CreateOrder;
 
-public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequestDto>
+public class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
 {
-    public CreateOrderRequestValidator()
+    public CreateOrderCommandValidator()
     {
         RuleFor(x => x.OrderId)
             .NotEmpty().WithMessage("orderId is required")

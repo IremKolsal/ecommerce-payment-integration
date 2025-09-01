@@ -1,9 +1,9 @@
-using ECommerce.Api.Middlewares;
-using ECommerce.Application.Services;
-using ECommerce.Application.Validation;
+﻿using ECommerce.Api.Middlewares;
+using ECommerce.Application;
+using ECommerce.Application.Abstractions;
 using ECommerce.Infrastructure.Balance;
+using ECommerce.Infrastructure.Balance.Mapping;
 using ECommerce.Infrastructure.Persistence;
-using ECommerce.Infrastructure.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +23,21 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(ECommerce.Application.AssemblyMarker).Assembly);
+});
+
+builder.Services.AddValidatorsFromAssembly(typeof(ECommerce.Application.AssemblyMarker).Assembly);
+
+
+builder.Services.AddAutoMapper(
+    cfg => { },                                     // ← boş config action (overload'u netleştirir)
+    typeof(AssemblyMarker).Assembly,                // Application profilleri
+    typeof(BalanceMappingProfile).Assembly          // Infrastructure profilleri
+);
+
 
 IAsyncPolicy<HttpResponseMessage> retryPolicy =
     HttpPolicyExtensions.HandleTransientHttpError()
@@ -37,23 +51,16 @@ IAsyncPolicy<HttpResponseMessage> circuitPolicy =
 var retryHandler = new PolicyHttpMessageHandler(retryPolicy);
 var circuitHandler = new PolicyHttpMessageHandler(circuitPolicy);
 
-builder.Services.AddHttpClient("Balance", client =>
+builder.Services.AddHttpClient<IBalanceClient, BalanceClient>(client =>
 {
     var baseUrl = builder.Configuration["Balance:BaseUrl"]
                   ?? "https://balance-management-pi44.onrender.com/api/";
     client.BaseAddress = new Uri(baseUrl);
-    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
 })
 .AddPolicyHandler(retryPolicy)
 .AddPolicyHandler(circuitPolicy);
-
-builder.Services.AddScoped<IBalanceClient>(sp =>
-{
-    var factory = sp.GetRequiredService<IHttpClientFactory>();
-    return new BalanceClient(factory.CreateClient("Balance"));
-});
-
-builder.Services.AddScoped<IOrderService, OrderService>();
 
 var app = builder.Build();
 

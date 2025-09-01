@@ -1,5 +1,7 @@
-﻿using ECommerce.Application.Contracts;
-using ECommerce.Application.Services;
+﻿using ECommerce.Application.Commands.CompleteOrder;
+using ECommerce.Application.Commands.CreateOrder;
+using ECommerce.Application.Queries.GetProducts;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Api.Controllers;
@@ -8,8 +10,12 @@ namespace ECommerce.Api.Controllers;
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly IOrderService _service;
-    public OrdersController(IOrderService service) => _service = service;
+    private readonly IMediator _mediator;
+
+    public OrdersController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
 
     /// <summary>
     /// Retrieves the list of products from Balance Management service.
@@ -20,10 +26,9 @@ public class OrdersController : ControllerBase
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpGet("/api/products")]
-    public async Task<IActionResult> GetProducts(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<GetProductsQueryResult>>> GetProducts(CancellationToken cancellationToken)
     {
-        var products = await _service.GetProductsAsync(cancellationToken);
-        return Ok(products);
+        return Ok(await _mediator.Send(new GetProductsQuery(), cancellationToken)); ;
     }
 
     /// <summary>
@@ -37,10 +42,9 @@ public class OrdersController : ControllerBase
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateOrderRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<CreateOrderCommandResult>> Create([FromBody] CreateOrderCommand command, CancellationToken cancellationToken)
     {
-        var response = await _service.CreateAsync(request, cancellationToken);
-        return Ok(response);
+        return Ok(await _mediator.Send(command, cancellationToken));
     }
 
     /// <summary>
@@ -54,9 +58,9 @@ public class OrdersController : ControllerBase
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpPost("{orderId}/complete")]
-    public async Task<IActionResult> Complete([FromRoute] string orderId, CancellationToken cancellationToken)
+    public async Task<ActionResult<CompleteOrderCommandResult>> Complete([FromRoute] string orderId, CancellationToken cancellationToken)
     {
-        var response = await _service.CompleteAsync(orderId, cancellationToken);
-        return Ok(response);
+        var result = await _mediator.Send(new CompleteOrderCommand(orderId), cancellationToken);
+        return Ok(result);
     }
 }
