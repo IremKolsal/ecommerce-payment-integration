@@ -16,10 +16,10 @@ public class CompleteOrderCommandHandler : IRequestHandler<CompleteOrderCommand,
     public async Task<CompleteOrderCommandResult> Handle(CompleteOrderCommand command, CancellationToken cancellationToken)
     {
         var order = await _repository.GetByExternalIdAsync(command.OrderId, cancellationToken)
-                    ?? throw AppErrors.Order.NotFound(command.OrderId);
+                    ?? throw AppErrors.OrderErrors.NotFound(command.OrderId);
 
         if (!string.Equals(order.Status, "blocked", StringComparison.OrdinalIgnoreCase))
-            throw AppErrors.Order.MustBeBlocked(order.ExternalOrderId, order.Status);
+            throw AppErrors.OrderErrors.MustBeBlocked(order.ExternalOrderId, order.Status);
 
         var info = await _balance.CompleteAsync(order.ExternalOrderId, cancellationToken);
 

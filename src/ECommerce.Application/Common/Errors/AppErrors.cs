@@ -2,7 +2,7 @@
 
 public static class AppErrors
 {
-    public static class Order
+    public static class OrderErrors
     {
         public static Exception NotFound(string externalOrderId) =>
             new KeyNotFoundException($"Order '{externalOrderId}' not found.");

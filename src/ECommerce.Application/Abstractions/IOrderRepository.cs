@@ -4,7 +4,7 @@ namespace ECommerce.Application.Abstractions;
 
 public interface IOrderRepository
 {
-    Task<Order?> GetByExternalIdAsync(string externalOrderId, CancellationToken ct);
-    Task AddAsync(Order order, CancellationToken ct);
-    Task<int> SaveChangesAsync(CancellationToken ct);
+    Task<Order?> GetByExternalIdAsync(string externalOrderId, CancellationToken cancellationToken);
+    Task AddAsync(Order order, CancellationToken cancellationToken);
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

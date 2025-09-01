@@ -17,6 +17,7 @@ public class BalanceClient : IBalanceClient
     };
     private readonly HttpClient _http;
     private readonly IMapper _mapper;
+
     public BalanceClient(HttpClient http, IMapper mapper)
     {
         _http = http;
@@ -36,25 +37,18 @@ public class BalanceClient : IBalanceClient
 
     public async Task<PreorderInfo> PreorderAsync(int amount, string orderId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var req = new PreorderRequestDto(amount, orderId);
-            using var res = await _http.PostAsJsonAsync(Endpoints.Preorder, req, _json, cancellationToken);
-            res.EnsureSuccessStatusCode();
 
-            var env = await res.Content.ReadFromJsonAsync<ResponseEnvelope<PreorderData>>(_json, cancellationToken)
-                      ?? throw new EmptyResponseException(Endpoints.Preorder);
+        var req = new PreorderRequestDto(amount, orderId);
+        using var res = await _http.PostAsJsonAsync(Endpoints.Preorder, req, _json, cancellationToken);
+        res.EnsureSuccessStatusCode();
 
-            ResponseGuard.EnsureOk(env, Endpoints.Preorder);
+        var env = await res.Content.ReadFromJsonAsync<ResponseEnvelope<PreorderData>>(_json, cancellationToken)
+                  ?? throw new EmptyResponseException(Endpoints.Preorder);
 
-            var pre = ResponseGuard.ThrowIfNull(env.Data, $"{Endpoints.Preorder}: data").PreOrder;
-            return _mapper.Map<PreorderInfo>(pre);
-        }
-        catch (Exception e)
-        {
+        ResponseGuard.EnsureOk(env, Endpoints.Preorder);
 
-            throw e;
-        }
+        var pre = ResponseGuard.ThrowIfNull(env.Data, $"{Endpoints.Preorder}: data").PreOrder;
+        return _mapper.Map<PreorderInfo>(pre);
     }
 
     public async Task<CompletionInfo> CompleteAsync(string orderId, CancellationToken cancellationToken)
