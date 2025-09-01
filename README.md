@@ -19,7 +19,7 @@ Balance Management Service ile entegre, **.NET 8 Web API** tabanlı e‑commerce
     `UpstreamServiceException`, `EmptyResponseException`, `PayloadMissingException`
 - **AutoMapper**
   - `Application.Common.Mapping.MappingProfile` (Info ➜ QueryResult)
-  - (İsteğe bağlı) Infrastructure profil/extension’ları
+  - Infrastructure profile
 - **Validation**: FluentValidation
 - **Global Exception Middleware**
 - **EF Core (Code-First) + PostgreSQL**
