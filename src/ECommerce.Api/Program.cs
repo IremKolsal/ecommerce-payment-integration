@@ -4,6 +4,7 @@ using ECommerce.Application.Abstractions;
 using ECommerce.Infrastructure.Balance;
 using ECommerce.Infrastructure.Balance.Mapping;
 using ECommerce.Infrastructure.Persistence;
+using ECommerce.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
@@ -33,15 +34,17 @@ builder.Services.AddValidatorsFromAssembly(typeof(ECommerce.Application.Assembly
 
 
 builder.Services.AddAutoMapper(
-    cfg => { },                                     // ← boş config action (overload'u netleştirir)
-    typeof(AssemblyMarker).Assembly,                // Application profilleri
-    typeof(BalanceMappingProfile).Assembly          // Infrastructure profilleri
+    cfg => { },                                     
+    typeof(AssemblyMarker).Assembly,               
+    typeof(BalanceMappingProfile).Assembly         
 );
 
+//repository
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
+//polly
 IAsyncPolicy<HttpResponseMessage> retryPolicy =
     HttpPolicyExtensions.HandleTransientHttpError()
-        .OrResult(r => r.StatusCode == HttpStatusCode.RequestTimeout)
         .WaitAndRetryAsync(3, i => TimeSpan.FromMilliseconds(200 * Math.Pow(2, i)));
 
 IAsyncPolicy<HttpResponseMessage> circuitPolicy =
@@ -51,6 +54,7 @@ IAsyncPolicy<HttpResponseMessage> circuitPolicy =
 var retryHandler = new PolicyHttpMessageHandler(retryPolicy);
 var circuitHandler = new PolicyHttpMessageHandler(circuitPolicy);
 
+//typed httpclient
 builder.Services.AddHttpClient<IBalanceClient, BalanceClient>(client =>
 {
     var baseUrl = builder.Configuration["Balance:BaseUrl"]

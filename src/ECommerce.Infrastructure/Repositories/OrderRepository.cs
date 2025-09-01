@@ -9,11 +9,11 @@ public sealed class OrderRepository(AppDbContext db) : IOrderRepository
 {
     private readonly AppDbContext _db = db;
 
-    public Task<Order?> GetByExternalIdAsync(string externalOrderId, CancellationToken ct) =>
-        _db.Orders.FirstOrDefaultAsync(x => x.ExternalOrderId == externalOrderId, ct);
+    public Task<Order?> GetByExternalIdAsync(string externalOrderId, CancellationToken cancellationToken) =>
+        _db.Orders.FirstOrDefaultAsync(x => x.ExternalOrderId == externalOrderId, cancellationToken);
 
-    public Task AddAsync(Order order, CancellationToken ct) =>
-        _db.Orders.AddAsync(order, ct).AsTask();
+    public Task AddAsync(Order order, CancellationToken cancellationToken) =>
+        _db.Orders.AddAsync(order, cancellationToken).AsTask();
 
-    public Task<int> SaveChangesAsync(CancellationToken ct) => _db.SaveChangesAsync(ct);
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => _db.SaveChangesAsync(cancellationToken);
 }

@@ -1,7 +1,7 @@
 ﻿namespace ECommerce.Infrastructure.Balance.Models;
 
 internal sealed record PreorderRequestDto(
-    decimal Amount,
+    int Amount,
     string OrderId
 );
 

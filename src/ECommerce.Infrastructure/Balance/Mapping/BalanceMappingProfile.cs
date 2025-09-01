@@ -8,14 +8,13 @@ public sealed class BalanceMappingProfile : Profile
 {
     public BalanceMappingProfile()
     {
-        // External DTO -> Gateway read-model (Info)
         CreateMap<ProductDto, ProductInfo>()
             .ConstructUsing(s => new ProductInfo(
                 s.Id, s.Name, s.Description, s.Price, s.Currency, s.Category, s.Stock
             ));
 
         CreateMap<PreOrderDetail, PreorderInfo>()
-            .ForCtorParam("ExternalOrderId", o => o.MapFrom(s => s.OrderId))
+            .ForCtorParam("OrderId", o => o.MapFrom(s => s.OrderId))
             .ForCtorParam("Amount", o => o.MapFrom(s => s.Amount))
             .ForCtorParam("Status", o => o.MapFrom(s => s.Status));
 

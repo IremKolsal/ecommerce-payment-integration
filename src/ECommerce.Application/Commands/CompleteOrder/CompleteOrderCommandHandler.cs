@@ -1,4 +1,5 @@
 ﻿using ECommerce.Application.Abstractions;
+using ECommerce.Application.Common.Errors;
 using MediatR;
 
 namespace ECommerce.Application.Commands.CompleteOrder;
@@ -14,20 +15,16 @@ public class CompleteOrderCommandHandler : IRequestHandler<CompleteOrderCommand,
     }
     public async Task<CompleteOrderCommandResult> Handle(CompleteOrderCommand command, CancellationToken cancellationToken)
     {
-        // 1) Siparişi repo’dan al
         var order = await _repository.GetByExternalIdAsync(command.OrderId, cancellationToken)
-                     ?? throw new KeyNotFoundException("Order not found");
+                    ?? throw AppErrors.Order.NotFound(command.OrderId);
 
-        // 2) Durum kontrolü
         if (!string.Equals(order.Status, "blocked", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Order state is not blocked");
+            throw AppErrors.Order.MustBeBlocked(order.ExternalOrderId, order.Status);
 
-        // 3) Upstream tamamla (DTO yok, primitive parametre)
-        var res = await _balance.CompleteAsync(order.ExternalOrderId, cancellationToken);
+        var info = await _balance.CompleteAsync(order.ExternalOrderId, cancellationToken);
 
-        // 4) Domain güncelle
-        order.Status = res.Status;
-        order.CompletedAt = res.CompletedAt;
+        order.Status = info.Status;
+        order.CompletedAt = info.CompletedAt;
 
         await _repository.SaveChangesAsync(cancellationToken);
 

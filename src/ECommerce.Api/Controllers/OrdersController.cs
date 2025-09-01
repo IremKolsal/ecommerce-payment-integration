@@ -20,9 +20,6 @@ public class OrdersController : ControllerBase
     /// <summary>
     /// Retrieves the list of products from Balance Management service.
     /// </summary>
-    /// <remarks>
-    /// This endpoint proxies the external Balance API's `/products` endpoint.
-    /// </remarks>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpGet("/api/products")]
@@ -34,11 +31,7 @@ public class OrdersController : ControllerBase
     /// <summary>
     /// Creates a new order and blocks balance via Balance Management service.
     /// </summary>
-    /// <remarks>
-    /// Calls the external `/api/balance/preorder` endpoint.  
-    /// The order is persisted with status <c>blocked</c>.
-    /// </remarks>
-    /// <param name="request"></param>
+    /// <param name="command"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpPost("create")]
@@ -50,17 +43,12 @@ public class OrdersController : ControllerBase
     /// <summary>
     /// Completes an existing order by calling Balance Management service.
     /// </summary>
-    /// <remarks>
-    /// Calls the external `/api/balance/complete` endpoint.  
-    /// Changes order status to <c>completed</c> if successful.
-    /// </remarks>
     /// <param name="orderId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpPost("{orderId}/complete")]
     public async Task<ActionResult<CompleteOrderCommandResult>> Complete([FromRoute] string orderId, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new CompleteOrderCommand(orderId), cancellationToken);
-        return Ok(result);
+        return Ok(await _mediator.Send(new CompleteOrderCommand(orderId), cancellationToken));
     }
 }

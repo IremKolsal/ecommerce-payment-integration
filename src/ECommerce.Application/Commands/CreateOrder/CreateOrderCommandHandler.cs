@@ -25,7 +25,7 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
             Id = Guid.NewGuid(),
             Status = status,
             TotalAmount = preRes.Amount,
-            ExternalOrderId = preRes.ExternalOrderId,
+            ExternalOrderId = preRes.OrderId,
             ReservedAt = DateTime.UtcNow
         };
 

@@ -2,6 +2,7 @@
 using ECommerce.Application.Abstractions;
 using ECommerce.Application.Abstractions.Models;
 using ECommerce.Infrastructure.Balance.Models;
+using ECommerce.Infrastructure.Common.Errors;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -11,7 +12,8 @@ public class BalanceClient : IBalanceClient
 {
     private static readonly JsonSerializerOptions _json = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
     private readonly HttpClient _http;
     private readonly IMapper _mapper;
@@ -23,54 +25,50 @@ public class BalanceClient : IBalanceClient
 
     public async Task<IReadOnlyList<ProductInfo>> GetProductsAsync(CancellationToken cancellationToken)
     {
-        var envelope = await _http.GetFromJsonAsync<ApiEnvelope<List<ProductDto>>>(
-                           Endpoints.Products, _json, cancellationToken)
-                       ?? throw new InvalidOperationException("Empty products response.");
+        var env = await _http.GetFromJsonAsync<ResponseEnvelope<List<ProductDto>>>(Endpoints.Products, _json, cancellationToken)
+                  ?? throw new EmptyResponseException(Endpoints.Products);
 
-        if (!envelope.Success)
-            throw new InvalidOperationException($"Upstream error: {envelope.Message}");
+        ResponseGuard.EnsureOk(env, Endpoints.Products);
 
-        var data = envelope.Data ?? new List<ProductDto>();
-
+        var data = env.Data ?? new List<ProductDto>();
         return _mapper.Map<List<ProductInfo>>(data).ToArray();
     }
 
-    public async Task<PreorderInfo> PreorderAsync(decimal amount, string orderId, CancellationToken cancellationToken)
+    public async Task<PreorderInfo> PreorderAsync(int amount, string orderId, CancellationToken cancellationToken)
     {
-        var req = new PreorderRequestDto(amount, orderId);
+        try
+        {
+            var req = new PreorderRequestDto(amount, orderId);
+            using var res = await _http.PostAsJsonAsync(Endpoints.Preorder, req, _json, cancellationToken);
+            res.EnsureSuccessStatusCode();
 
-        using var res = await _http.PostAsJsonAsync(Endpoints.Preorder, req, _json, cancellationToken);
+            var env = await res.Content.ReadFromJsonAsync<ResponseEnvelope<PreorderData>>(_json, cancellationToken)
+                      ?? throw new EmptyResponseException(Endpoints.Preorder);
 
-        res.EnsureSuccessStatusCode();
+            ResponseGuard.EnsureOk(env, Endpoints.Preorder);
 
-        var env = await res.Content.ReadFromJsonAsync<ApiEnvelope<PreorderData>>(_json, cancellationToken)
-                  ?? throw new InvalidOperationException("Empty preorder response.");
+            var pre = ResponseGuard.ThrowIfNull(env.Data, $"{Endpoints.Preorder}: data").PreOrder;
+            return _mapper.Map<PreorderInfo>(pre);
+        }
+        catch (Exception e)
+        {
 
-        if (!env.Success)
-            throw new InvalidOperationException($"Upstream error: {env.Message}");
-
-        var pre = env.Data?.PreOrder
-                  ?? throw new InvalidOperationException("Preorder payload missing.");
-
-        return _mapper.Map<PreorderInfo>(pre);
+            throw e;
+        }
     }
 
     public async Task<CompletionInfo> CompleteAsync(string orderId, CancellationToken cancellationToken)
     {
         var req = new CompleteRequestDto(orderId);
-
         using var res = await _http.PostAsJsonAsync(Endpoints.Complete, req, _json, cancellationToken);
         res.EnsureSuccessStatusCode();
 
-        var env = await res.Content.ReadFromJsonAsync<ApiEnvelope<CompleteData>>(_json, cancellationToken)
-                  ?? throw new InvalidOperationException("Empty complete response.");
+        var env = await res.Content.ReadFromJsonAsync<ResponseEnvelope<CompleteData>>(_json, cancellationToken)
+                  ?? throw new EmptyResponseException(Endpoints.Complete);
 
-        if (!env.Success)
-            throw new InvalidOperationException($"Upstream error: {env.Message}");
+        ResponseGuard.EnsureOk(env, Endpoints.Complete);
 
-        var ord = env.Data?.Order
-                  ?? throw new InvalidOperationException("Complete payload missing.");
-
+        var ord = ResponseGuard.ThrowIfNull(env.Data, $"{Endpoints.Complete}: data").Order;
         return _mapper.Map<CompletionInfo>(ord);
     }
 }
