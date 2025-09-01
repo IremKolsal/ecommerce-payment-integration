@@ -1,117 +1,152 @@
-# İREM BEYZA KOLSAL ECommerce Case
+İREM BEYZA KOLSAL — ECommerce Case
+📦 E-Commerce Payment Integration (Balance Service)
 
-# 📚 E-Commerce Payment Integration Challenge
+Balance Management Service ile entegre, .NET 8 Web API tabanlı e-commerce uygulaması.
 
-Balance Management Service ile entegre, **.NET 8 Web API** tabanlı basit bir e-commerce uygulaması.
+🚀 Neler Var?
 
-## ⏳ Zaman Kalsa Yapacaklarım
+CQRS + MediatR
 
-* Hata mesajlarını tek sınıfta toplamak
-* Base response modeli
-* Feature branch stratejisi
-* CQRS + MediatR / Repository Pattern
-* Unit testler (xUnit + Moq)
-* Serilog, HealthChecks
+CreateOrderCommand, CompleteOrderCommand, GetProductsQuery
 
-## 🔧 Teknolojiler
+Her biri için ayrı *Handler ve *Result (record) tipleri
 
-* .NET 8 (ASP.NET Core Web API)
-* PostgreSQL 17
-* Entity Framework Core (Code-First + Migrations)
-* FluentValidation
-* Polly (retry + circuit breaker)
-* Docker + Docker Compose
-* Swagger (Swashbuckle)
+Repository Pattern
 
----
+IOrderRepository (Add/GetByExternalId/SaveChanges)
 
-## 📁 Proje Yapısı
+Infrastructure Gateway
 
-```
+BalanceClient (typed HttpClient + Polly)
+
+Upstream DTO’ları Infrastructure.Balance.Models içinde internal tutulur
+
+ResponseEnvelope<T> + ResponseGuard + özel exception’lar
+(UpstreamServiceException, EmptyResponseException, PayloadMissingException)
+
+AutoMapper
+
+MappingProfile (Application) — Info → QueryResult
+
+(Infrastructure tarafında da profil var; Balance payload → Info mapping’i destekler)
+
+Validation
+
+FluentValidation
+
+Global Exception Middleware
+
+EF Core (Code-First) + PostgreSQL
+
+Swagger, Docker Compose, Polly (retry + circuit breaker)
+
+Unit Tests
+
+ECommerce.Application.Tests (handler’lar)
+
+ECommerce.Infrastructure.Tests (BalanceClient; HttpStub ile sahte HTTP)
+
+🗂️ Proje Yapısı
 ECommerce/
 ├─ docker-compose.yml
-├─ Dockerfile
 ├─ ECommerce.sln
-└─ src/
-   ├─ ECommerce.Api/
-   ├─ ECommerce.Application/
-   ├─ ECommerce.Domain/
-   └─ ECommerce.Infrastructure/
-```
+├─ src/
+│  ├─ ECommerce.Api/
+│  ├─ ECommerce.Application/
+│  │  ├─ Commands/
+│  │  ├─ Queries/
+│  │  ├─ Abstractions/ (IBalanceClient, IOrderRepository, Models/*Info)
+│  │  └─ Common/Mapping/MappingProfile.cs
+│  ├─ ECommerce.Domain/ (Entities: Order, OrderItem)
+│  └─ ECommerce.Infrastructure/
+│     ├─ Balance/
+│     │  ├─ BalanceClient.cs
+│     │  ├─ Models/ (internal DTO’lar, Endpoints)
+│     │  └─ Mapping/ (profile)
+│     └─ Persistence/ (AppDbContext, repo impl.)
+└─ tests/
+   ├─ ECommerce.Application.Tests/
+   │  ├─ Handlers/
+   └─ ECommerce.Infrastructure.Tests/
+      └─ Clients/ (+ Support/HttpStub.cs)
 
-> `OrderItem` bu case’de aktif kullanılmıyor; geleceğe dönük bırakıldı.
 
----
-
-## ⚙️ Kurulum & Çalıştırma
-
-### 1) Docker Compose
-
-```bash
+⚙️ Kurulum & Çalıştırma
+Docker
 docker compose up -d --build
-```
 
-* API: [http://localhost:8081/swagger](http://localhost:8081/swagger)
-* DB: `localhost:5434` (user: postgres, pass: postgres, db: ecommerce)
 
-### 2) Lokal
+Swagger: http://localhost:8081/swagger
 
-```json
+Postgres: localhost:5434 (user: postgres, pass: postgres, db: ecommerce)
+
+Lokal (appsettings.json)
 "ConnectionStrings": {
   "Default": "Host=localhost;Port=5434;Database=ecommerce;Username=postgres;Password=postgres"
 },
 "Balance": {
-  "BaseUrl": "https://balance-management-pi44.onrender.com/api/balance/"
+  "BaseUrl": "https://balance-management-pi44.onrender.com/api/"
 }
-```
-
----
-
-## 🧱 Database & Migration
-
-* Migrations **lokalde** oluşturuldu.
-* Container içinde otomatik uygulanıyor (`Program.cs`):
-
----
-
-## 🔗 Balance Service Entegrasyonu
-
-* Base URL: `https://balance-management-pi44.onrender.com/api/balance/`
-* Polly retry + circuit breaker kullanıldı.
-* JSON case-insensitive parse edildi.
-
----
-
-## 💨 Hata Yönetimi
-
-Global `ExceptionMiddleware`:
 
 
-## 🧠 Tasarım Kararları
+Dikkat: BaseUrl /api/ ile biter. BalanceClient kendi içinde balance/preorder, balance/complete, products gibi path’leri ekler.
 
-* Katmanlı yapı (Api / Application / Domain / Infrastructure)
-* BalanceClient + Polly
-* Order tablosu (OrderItem future use)
-* DTO’lar dış servise uyumlu
+Uygulama açılışında:
 
-## 🛣️ Endpointler  
-Localde çalıştırılabilecek örnek request ve responselar.  
-Swagger UI: [http://localhost:8081/swagger](http://localhost:8081/swagger) (docker üzerinden de erişilebilir).  
+Global exception middleware aktif
 
----
+DB migrate/ensure işlemleri otomatik
 
-### GET /api/products  
-Balance servisinden ürün listesini getirir.  
+🔗 Balance Entegrasyonu
 
-**Request**  
-```
+Typed HttpClient: AddHttpClient<IBalanceClient, BalanceClient>(...)
 
-GET [http://localhost:8081/api/products](http://localhost:8081/api/products)
+Polly: Retry + Circuit Breaker
 
-````
+JSON: case-insensitive + camelCase policy
 
-**Response Body**  
-```json
+Guard: ResponseGuard.EnsureOk, ThrowIfNull ile upstream hataları tek yerden yönetilir.
+
+🧠 CQRS Akışı (Özet)
+
+Create
+CreateOrderCommand(amount, orderId) → handler
+
+_balance.PreorderAsync(amount, orderId)
+
+Order entity oluştur + repo AddAsync
+
+SaveChangesAsync
+
+CreateOrderCommandResult döner
+
+Complete
+CompleteOrderCommand(orderId) → handler
+
+repo’dan GetByExternalIdAsync
+
+state guard (blocked değilse hata)
+
+_balance.CompleteAsync(orderId)
+
+entity güncelle + SaveChangesAsync
+
+CompleteOrderCommandResult döner
+
+Products
+GetProductsQuery → _balance.GetProductsAsync()
+→ AutoMapper ile GetProductsQueryResult listesine map
+
+🛣️ API Endpoint’leri (Örnekler)
+GET /api/products
+
+Balance servisinden ürün listesi (proxy).
+
+GET http://localhost:8081/api/products
+
+
+Örnek Response
+
 [
   {
     "id": "prod-001",
@@ -123,100 +158,93 @@ GET [http://localhost:8081/api/products](http://localhost:8081/api/products)
     "stock": 42
   }
 ]
-````
 
----
+POST /api/orders/create
 
-### POST /api/orders/create
+Pre-order + sipariş oluşturma.
 
-Yeni sipariş oluşturur ve Balance servisinden preorder çağırır.
-
-**Request**
-
-```
 POST http://localhost:8081/api/orders/create
 Content-Type: application/json
-```
 
-**Request Body**
 
-```json
-{
-  "amount": 15,
-  "orderId": "preorder-001"
-}
-```
+Body
 
-**Response Body**
+{ "amount": 15, "orderId": "preorder-001" }
 
-```json
+
+Response
+
 {
   "id": "c94ecd9d-ca15-4842-a487-bd56fbdefc2e",
   "orderId": "preorder-001",
   "status": "blocked",
   "totalAmount": 15
 }
-```
 
----
+POST /api/orders/{orderId}/complete
 
-### POST /api/orders/{orderId}/complete
+Siparişi tamamlama (Balance complete).
 
-Daha önce oluşturulmuş siparişi tamamlar (Balance complete çağrısı).
-
-**Request**
-
-```
 POST http://localhost:8081/api/orders/preorder-001/complete
-```
 
-**Parameters**
 
-* `orderId` (string, required, path): Tamamlanacak sipariş kimliği (örn: preorder-001).
+Response
 
-**Response Body**
+{ "orderId": "preorder-001", "status": "completed" }
 
-```json
-{
-  "orderId": "preorder-001",
-  "status": "completed"
-}
-```
+🧪 Unit Testler
 
-## 📝 Notlar
+Application.Tests
 
-* `OrderItem` kullanılmıyor ama geleceğe yönelik duruyor.
-* `ExternalOrderId` Balance servisindeki `orderId`.
-* Migration dosyaları **lokalde** üretildi.
+Handler/Query testleri (xUnit + Moq + AutoFixture/AutoMoq)
 
----
-Docker Otomatik Migration Çalışmazsa (Fallback Planı)
------------------------------------------------------
-Nadir durumlarda Postgres container’ı geç hazır olabilir veya otomatik migrate uygulanmayabilir. Aşağıdaki adımlarla manuel uygulayabilirsiniz:
-*Container’lar çalışsın (compose açık kalsın):
-  docker compose up -d --build
-*DB’de tablo var mı kontrol et (backslash gerektirmeyen sorgu):
-  docker exec -it ecommerce-db psql -U postgres -d ecommerce -c "SELECT tablename FROM pg_tables WHERE schemaname='public';"
-Çıktı boşsa (“Did not find any relations”) bir sonraki adıma geçin.
+SaveChangesAsync imzası Task<int> ise mock: .ReturnsAsync(1)
 
-***Migration’ı lokalden, docker’daki DB’ye uygula:
+Infrastructure.Tests
 
-dotnet ef database update ^
-  --project src\ECommerce.Infrastructure ^
-  --startup-project src\ECommerce.Api ^
+BalanceClient
 
-Bu komut appsettings.json içindeki
-Host=localhost;Port=5434;Database=ecommerce;Username=postgres;Password=postgres
-bağlantısını kullanarak docker’daki Postgres’e migration’ı uygular.
+HttpStub ile sahte HttpClient (deterministik JSON)
 
-Yeniden kontrol:
+IMapper mock (internal DTO’lara referans yok)
 
-docker exec -it ecommerce-db psql -U postgres -d ecommerce -c "SELECT tablename FROM pg_tables WHERE schemaname='public';"
+Success + error flow’ları (400, upstream error, empty body)
 
-Gerekirse dotnet-ef aracını güncelleyin:
-dotnet tool update --global dotnet-ef --version 8.0.0
+Çalıştır:
 
-## 🙌 Son Söz
+dotnet test
 
-Bu proje verilen süre içinde zorunlu gereksinimleri karşıladı.
-Tüm testler `/swagger` üzerinden yapılabilir.
+🧾 Hata Yönetimi
+
+Global: UseGlobalExceptions()
+
+Upstream: UpstreamServiceException, EmptyResponseException, PayloadMissingException
+
+(İsteğe bağlı) AppErrors helper ile tutarlı mesaj üretimi
+
+🛠️ Teknolojiler
+
+.NET 8 (ASP.NET Core Web API)
+
+MediatR, AutoMapper, FluentValidation
+
+EF Core + PostgreSQL
+
+Polly (Retry + Circuit Breaker)
+
+Docker + Docker Compose
+
+Swagger (Swashbuckle)
+
+xUnit, Moq, AutoFixture
+
+📌 Notlar
+
+OrderItem şimdilik future use.
+
+ExternalOrderId = Balance servisindeki orderId.
+
+Upstream DTO’ları Infrastructure içinde internal; uygulama katmanı Info modelleriyle çalışır.
+
+Hazır 🎯
+Her şey docker veya lokal konfig ile ayağa kalkar; testler dotnet test ile geçer.
