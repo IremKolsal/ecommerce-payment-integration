@@ -20,12 +20,12 @@ Balance Management Service ile entegre, **.NET 8 Web API** tabanlı e‑commerce
 - **AutoMapper**
   - `Application.Common.Mapping.MappingProfile` (Info ➜ QueryResult)
   - (İsteğe bağlı) Infrastructure profil/extension’ları
-- **Validation**: FluentValidation (komutlar için eklenebilir; assembly scan açık)
+- **Validation**: FluentValidation
 - **Global Exception Middleware**
 - **EF Core (Code-First) + PostgreSQL**
 - **Swagger**, **Docker Compose**, **Polly (retry + circuit breaker)**
 - **Unit Tests**
-  - `ECommerce.Application.Tests` (handlers/queries)
+  - `ECommerce.Application.Tests` (handlers)
   - `ECommerce.Infrastructure.Tests` (BalanceClient; **HttpStub** ile sahte HTTP)
 
 ---
@@ -48,17 +48,14 @@ ECommerce/
 │     ├─ Balance/
 │     │  ├─ BalanceClient.cs
 │     │  ├─ Models/ (internal DTO’lar, Endpoints, ResponseEnvelope)
-│     │  └─ Mapping/ (profile/extension)
+│     │  └─ Mapping/ (profile)
 │     └─ Persistence/ (AppDbContext, repository implementation)
 └─ tests/
    ├─ ECommerce.Application.Tests/
    │  ├─ Handlers/
-   │  └─ Queries/
    └─ ECommerce.Infrastructure.Tests/
       └─ Clients/ (+ Support/HttpStub.cs)
 ```
-
-> Not: Upstream DTO’lar **Infrastructure** içinde **internal** kalır. Testlerde `HttpStub` + `IMapper` mock kullanıldığı için internal tiplere doğrudan referans gerekmez. Gerekirse `InternalsVisibleTo` eklenebilir.
 
 ---
 
@@ -177,13 +174,10 @@ Response
 ## 🧪 Unit Testler
 
 - **Application.Tests**
-  - Handlers & Queries (xUnit + Moq + AutoFixture/AutoMoq)
-  - `SaveChangesAsync` imzası `Task<int>` ise mock: `.ReturnsAsync(1)`
+  - Handlers (xUnit + Moq + AutoFixture/AutoMoq)
 - **Infrastructure.Tests**
   - `BalanceClient`
     - **HttpStub** ile sahte `HttpClient` (deterministik JSON)
-    - `IMapper` **mock** (internal DTO’lara referans yok)
-    - Success + error akışları (400, upstream error, empty body)
 
 Çalıştır:
 ```bash
@@ -196,7 +190,6 @@ dotnet test
 
 - **Global**: `UseGlobalExceptions()`  
 - **Upstream**: `UpstreamServiceException`, `EmptyResponseException`, `PayloadMissingException`  
-- (Opsiyonel) `AppErrors` helper ile tutarlı mesajlar
 
 ---
 
